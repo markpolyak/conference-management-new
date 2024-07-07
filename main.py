@@ -1,10 +1,12 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Request, Form
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from googleapiclient.http import MediaIoBaseUpload
 import io
 from get_item import *
 import logging
+
+from models import Application
 
 # Настройка журналирования
 logging.basicConfig(level=logging.DEBUG)
@@ -108,30 +110,31 @@ async def get_single_application(conference_id: int, application_id: int, email:
         raise HTTPException(status_code=500, detail="An unexpected error occurred")
 
 
+# TODO файл загружается, но мне надо изменить данные в таблице
 @app.post("/conferences/{conference_id}/applications/{application_id}/publication")
-async def upload_application(conference_id: int, application_id: int, email: str = None,
-                             telegram_id: str = None, discord_id: str = None,
+async def upload_application(conference_id: int, application_id: int,
+                             email: str = Form(...), telegram_id: str = Form(None), discord_id: str = Form(None),
                              file: UploadFile = File(...)):
     try:
+
         records = await get_google_sheet_data(conference_id)
+
         for record in records:
             if record['id'] == application_id:
-                if (((email is not None) & (email == record['email'])) or
-                        ((telegram_id is not None) & (telegram_id == record['telegram_id'])) or
-                        ((discord_id is not None) & (discord_id == record['discord_id']))):
+                print(email, record['email'])
+                if ((email and email == record['email']) or
+                        (telegram_id and telegram_id == record['telegram_id']) or
+                        (discord_id and discord_id == record['discord_id'])):
                     if file.filename == '':
                         raise HTTPException(status_code=400, detail="No selected file")
                     # Чтение содержимого файла
                     file_content = await file.read()
-
                     # Создание метаданных файла
                     file_metadata = {'name': file.filename, 'parents': [folder_id]}
-
                     # создается объект MediaIoBaseUpload, для загрузки содержимого файла на Google Drive
                     # преобразуется байтовое содержимое файла в поток, который может быть использован для загрузки
-                    # указывается MIME-тип файла, (берется из загружаемого)
+                    # указывается MIME-тип файла (берется из загружаемого)
                     media = MediaIoBaseUpload(io.BytesIO(file_content), mimetype=file.content_type)
-
                     # Загрузка файла на Google Drive
                     gfile = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
                 else:
@@ -139,7 +142,9 @@ async def upload_application(conference_id: int, application_id: int, email: str
         raise HTTPException(status_code=404, detail="Publication not found")
 
     except Exception as e:
-        if isinstance(e, HTTPException) and e.status_code == (404 or 403):
+        if isinstance(e, HTTPException) and e.status_code == 404:
+            raise e
+        elif isinstance(e, HTTPException) and e.status_code == 403:
             raise e
         logger.exception("")
         raise HTTPException(status_code=500, detail="An unexpected error occurred")
