@@ -1,4 +1,6 @@
-from fastapi import FastAPI, UploadFile, File, Request, Form
+import datetime
+
+from fastapi import FastAPI, UploadFile, File, Form
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from googleapiclient.http import MediaIoBaseUpload
@@ -6,7 +8,6 @@ import io
 from get_item import *
 import logging
 
-from models import Application
 
 # Настройка журналирования
 logging.basicConfig(level=logging.DEBUG)
@@ -110,18 +111,23 @@ async def get_single_application(conference_id: int, application_id: int, email:
         raise HTTPException(status_code=500, detail="An unexpected error occurred")
 
 
-# TODO файл загружается, но мне надо изменить данные в таблице
+# TODO попытаться оптимизировать (запрос идет 10 секунд)
 @app.post("/conferences/{conference_id}/applications/{application_id}/publication")
 async def upload_application(conference_id: int, application_id: int,
-                             email: str = Form(...), telegram_id: str = Form(None), discord_id: str = Form(None),
+                             email: str = Form(None), telegram_id: str = Form(None), discord_id: str = Form(None),
+                             publication_title: str = Form(...), keywords: str = Form(None), abstract: str = Form(None),
                              file: UploadFile = File(...)):
     try:
-
-        records = await get_google_sheet_data(conference_id)
+        test_arr = [email, telegram_id, discord_id]
+        if test_arr.count(None) != 2:
+            raise HTTPException(status_code=403, detail="Only one of email, telegram_id, discord_id must be provided")
+        table_key = get_participants_table_key_by_conference_id(conference_id)
+        worksheet = gc.open_by_key(table_key).sheet1
+        records = worksheet.get_all_records()
 
         for record in records:
             if record['id'] == application_id:
-                print(email, record['email'])
+                # print(email, record['email'])
                 if ((email and email == record['email']) or
                         (telegram_id and telegram_id == record['telegram_id']) or
                         (discord_id and discord_id == record['discord_id'])):
@@ -137,6 +143,36 @@ async def upload_application(conference_id: int, application_id: int,
                     media = MediaIoBaseUpload(io.BytesIO(file_content), mimetype=file.content_type)
                     # Загрузка файла на Google Drive
                     gfile = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+
+                    file_id = gfile.get('id')
+                    file_url = f'https://drive.google.com/uc?id={file_id}'
+
+                    # обновление данных в таблице
+                    # Получение заголовков столбцов
+                    headers = worksheet.row_values(1)
+                    # Обновление ячейки по индексу строки и индексу столбца
+                    worksheet.update_cell(record['id']+1, headers.index("download_url") + 1, file_url)
+                    worksheet.update_cell(record['id']+1, headers.index("publication_title") + 1, publication_title)
+                    if abstract:
+                        worksheet.update_cell(record['id']+1, headers.index("abstract") + 1, abstract)
+                    else:
+                        abstract = record['abstract']
+                    if keywords:
+                        worksheet.update_cell(record['id']+1, headers.index("keywords") + 1, keywords)
+                    else:
+                        keywords = record['keywords']
+                    worksheet.update_cell(record['id']+1, headers.index("upload_date") + 1,
+                                          datetime.datetime.now().astimezone().isoformat())
+                    worksheet.update_cell(record['id']+1, headers.index("review_status") + 1, "in progress")
+                    return {
+                        'id': record['id'],
+                        'publication_title': publication_title,
+                        'upload_date': datetime.datetime.now().astimezone().isoformat(),
+                        'review_status': "in progress",
+                        'download_url': file_url,
+                        'keywords': keywords,
+                        'abstract': abstract
+                    }
                 else:
                     raise HTTPException(status_code=403, detail="Wrong email/telegram/discord")
         raise HTTPException(status_code=404, detail="Publication not found")
