@@ -1,3 +1,5 @@
+import datetime
+
 from fastapi import HTTPException
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -17,8 +19,15 @@ def get_participants_table_key_by_conference_id(conference_id: int) -> str:
         records = worksheet.get_all_records()
         for record in records:
             if record['id'] == conference_id:
-                return record['participants_key']
+                if record['registration_end_date'] < datetime.datetime.now().astimezone().isoformat():
+                    raise HTTPException(status_code=403, detail="Registration is closed")
+                else:
+                    return record['google_spreadsheet']
 
         raise HTTPException(status_code=404, detail="Conference not found")
     except Exception as e:
+        if isinstance(e, HTTPException) and e.status_code == 404:
+            raise e
+        elif isinstance(e, HTTPException) and e.status_code == 403:
+            raise e
         raise HTTPException(status_code=500, detail=f"Error accessing Google Sheets: {str(e)}")
