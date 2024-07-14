@@ -1,5 +1,4 @@
-import datetime
-
+import gspread
 from fastapi import FastAPI, UploadFile, File, Form, Body
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
@@ -24,24 +23,31 @@ scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/au
 credentials = service_account.Credentials.from_service_account_file('creds.json', scopes=scope)
 
 # google drive folder id
-folder_id = '1-501eVaZotRZneaIjwnvmuZ2Ry4p9Ljf'
+# folder_id = '1-501eVaZotRZneaIjwnvmuZ2Ry4p9Ljf'
+
 # сервис для взаимодействия с google drive api
 drive_service = build('drive', 'v3', credentials=credentials)
 # авторизованный клиент для работы с google sheets
 gc = gspread.authorize(credentials)
 
+cache = {}
 
-async def upload_file(file: UploadFile) -> str:
+
+async def upload_file(file: UploadFile, folder_id) -> str:
     if file.filename == '':
         raise HTTPException(status_code=400, detail="No selected file")
-        # Чтение содержимого файла
+    # Проверяется MIME-тип файла
+    mimetype = file.content_type
+    if mimetype not in ['application/msword',
+                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document']:
+        raise HTTPException(status_code=400, detail="Only .doc and .docx files are allowed")
+    # Чтение содержимого файла
     file_content = await file.read()
     # Создание метаданных файла
     file_metadata = {'name': file.filename, 'parents': [folder_id]}
     # создается объект MediaIoBaseUpload, для загрузки содержимого файла на Google Drive
     # преобразуется байтовое содержимое файла в поток, который может быть использован для загрузки
-    # указывается MIME-тип файла (берется из загружаемого)
-    media = MediaIoBaseUpload(io.BytesIO(file_content), mimetype=file.content_type)
+    media = MediaIoBaseUpload(io.BytesIO(file_content), mimetype=mimetype)
     # Загрузка файла на Google Drive
     gfile = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
 
@@ -52,11 +58,28 @@ async def upload_file(file: UploadFile) -> str:
 
 def only_one_check(email, telegram_id, discord_id):
     test_arr = [email, telegram_id, discord_id]
-    return not (test_arr.count(None) != 2)
+    if test_arr.count(None) != 2:
+        raise HTTPException(status_code=403, detail="Only one of email, telegram_id, discord_id must be provided")
+    return True
 
+
+# Функция извлекает данные из кэша, если они там есть, иначе из таблицы Google Sheets
+# Если дата регистрации уже прошла, то данные кэша каждый раз сверяются с таблицей
+# На случай, если дата регистрации в таблице была изменена вручную
 
 async def get_google_sheet_data(conference_id):
-    table_key = get_participants_table_key_by_conference_id(conference_id)
+    if conference_id in cache:
+        table_key, folder_id, registration_end_date = cache[conference_id]
+        if registration_end_date < datetime.datetime.now().astimezone().isoformat():
+            table_key, folder_id, registration_end_date = get_participants_table_key_by_conference_id(conference_id, gc)
+            cache[conference_id] = (table_key, folder_id, registration_end_date)
+            if registration_end_date < datetime.datetime.now().astimezone().isoformat():
+                raise HTTPException(status_code=403, detail="Registration is closed")
+    else:
+        table_key, folder_id, registration_end_date = get_participants_table_key_by_conference_id(conference_id, gc)
+        cache[conference_id] = (table_key, folder_id, registration_end_date)
+        if registration_end_date < datetime.datetime.now().astimezone().isoformat():
+            raise HTTPException(status_code=403, detail="Registration is closed")
     worksheet = gc.open_by_key(table_key).sheet1
     records = worksheet.get_all_records()
     return records
@@ -99,10 +122,7 @@ async def get_publications(conference_id: int, email: str = None, telegram_id: s
         else:
             raise HTTPException(status_code=404, detail="No publications found")
     except Exception as e:
-        if isinstance(e, HTTPException) and e.status_code == 404:
-            raise e
-        logger.exception("Произошла ошибка при доступе к Google Sheets")
-        raise HTTPException(status_code=500, detail="An unexpected error occurred")
+        raise e
 
 
 @app.get("/conferences/{conference_id}/applications/{application_id}/publication")
@@ -143,12 +163,11 @@ async def upload_application(conference_id: int, application_id: int,
                              publication_title: str = Form(...), keywords: str = Form(None), abstract: str = Form(None),
                              file: UploadFile = File(...)):
     try:
-        if not only_one_check(email, telegram_id, discord_id):
-            raise HTTPException(status_code=403, detail="Only one of email, telegram_id, discord_id must be provided")
-        table_key = get_participants_table_key_by_conference_id(conference_id)
+        only_one_check(email, telegram_id, discord_id)
+        data = get_participants_table_key_by_conference_id(conference_id, gc)
+        table_key, folder_id = data[0], data[1]
         worksheet = gc.open_by_key(table_key).sheet1
         records = worksheet.get_all_records()
-
         for record in records:
             if record['id'] == application_id:
                 # print(email, record['email'])
@@ -156,7 +175,7 @@ async def upload_application(conference_id: int, application_id: int,
                         (telegram_id and telegram_id == record['telegram_id']) or
                         (discord_id and discord_id == record['discord_id'])):
 
-                    file_url = await upload_file(file)
+                    file_url = await upload_file(file, folder_id)
 
                     # обновление данных в таблице
                     # Получение заголовков столбцов
@@ -212,12 +231,8 @@ async def upload_application(conference_id: int, application_id: int,
         raise HTTPException(status_code=404, detail="Publication not found")
 
     except Exception as e:
-        if isinstance(e, HTTPException) and e.status_code == 404:
-            raise e
-        elif isinstance(e, HTTPException) and e.status_code == 403:
-            raise e
         logger.exception("")
-        raise HTTPException(status_code=500, detail="An unexpected error occurred")
+        raise e
 
 
 @app.put("/conferences/{conference_id}/applications/{application_id}/publication")
@@ -226,18 +241,19 @@ async def update_application(conference_id: int, application_id: int,
                              file: UploadFile = File(None)):
     try:
         # print(email, telegram_id, discord_id)
-        if not only_one_check(email, telegram_id, discord_id):
-            raise HTTPException(status_code=403, detail="Only one of email, telegram_id, discord_id must be provided")
-        table_key = get_participants_table_key_by_conference_id(conference_id)
+        only_one_check(email, telegram_id, discord_id)
+        data = get_participants_table_key_by_conference_id(conference_id, gc)
+        table_key, folder_id = data[0], data[1]
         worksheet = gc.open_by_key(table_key).sheet1
         records = worksheet.get_all_records()
+
         for record in records:
             if record['id'] == application_id:
                 print(discord_id, record['discord_id'])
                 if ((email and email == record['email']) or
                         (telegram_id and telegram_id == record['telegram_id']) or
                         (discord_id and discord_id == record['discord_id'])):
-                    file_url = await upload_file(file)
+                    file_url = await upload_file(file, folder_id)
                     headers = worksheet.row_values(1)
 
                     cells = [
@@ -260,10 +276,7 @@ async def update_application(conference_id: int, application_id: int,
                     raise HTTPException(status_code=403, detail="Wrong email/telegram/discord")
         raise HTTPException(status_code=404, detail="Publication not found")
     except Exception as e:
-        if isinstance(e, HTTPException) and e.status_code in [404, 403]:
-            raise e
-        logger.exception("Произошла ошибка при доступе к Google Sheets")
-        raise HTTPException(status_code=500, detail="An unexpected error occurred")
+        raise e
 
 
 @app.patch("/conferences/{conference_id}/applications/{application_id}/publication")
@@ -271,10 +284,10 @@ async def update_metadata(conference_id: int, application_id: int,
                           email: str = Body(None), telegram_id: str = Body(None), discord_id: str = Body(None),
                           publication_title: str = Body(None), keywords: str = Body(None), abstract: str = Body(None)):
     try:
-        print(email, telegram_id, discord_id)
-        if not only_one_check(email, telegram_id, discord_id):
-            raise HTTPException(status_code=403, detail="Only one of email, telegram_id, discord_id must be provided")
-        table_key = get_participants_table_key_by_conference_id(conference_id)
+        # print(email, telegram_id, discord_id)
+        only_one_check(email, telegram_id, discord_id)
+        data = get_participants_table_key_by_conference_id(conference_id, gc)
+        table_key, folder_id = data[0], data[1]
         worksheet = gc.open_by_key(table_key).sheet1
         records = worksheet.get_all_records()
 
@@ -310,7 +323,4 @@ async def update_metadata(conference_id: int, application_id: int,
                     raise HTTPException(status_code=403, detail="Wrong email/telegram/discord")
         raise HTTPException(status_code=404, detail="Publication not found")
     except Exception as e:
-        if isinstance(e, HTTPException) and e.status_code in [404, 403]:
-            raise e
-        logger.exception("Произошла ошибка при доступе к Google Sheets")
-        raise HTTPException(status_code=500, detail="An unexpected error occurred")
+        raise e
