@@ -43,9 +43,14 @@ def add_application(conference_id, application):
 
     record = application.dict()
 
-    id = reduce(lambda x, y: x if x['id'] > y['id'] else y, sheet.get_all_records())['id'] + 1
+    sheet_with_id = sheet.get_all_records()
 
-    record['id'] = id
+    record_id = 1
+
+    if sheet_with_id:
+        record_id = reduce(lambda x, y: x if x['id'] > y['id'] else y, sheet_with_id)['id'] + 1
+
+    record['id'] = record_id
     record['submitted_at'] = datetime.now().astimezone().isoformat()
     record['updated_at'] = record['submitted_at']
 
