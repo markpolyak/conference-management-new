@@ -1,9 +1,9 @@
 import smtplib
 import json
 import datetime
+from helpers.config_helper import get_config
 
-with open('C:\\Users\\evgen\\OneDrive\\Рабочий стол\\учёба\\6\\практика\\applications\\config.json', 'r') as f:
-    config = json.load(f)
+config = get_config()
 
 # данные почтового сервиса
 user = config['smtp-server-mail']
