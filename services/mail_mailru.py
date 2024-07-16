@@ -21,7 +21,7 @@ def send_mail(to: str, conference_id, author_id):
     # текущее время
     date = datetime.datetime.now().astimezone().isoformat()
     # текст письма
-    text = f"Запрос об отмены заявки от автора с id {author_id} из конференции {conference_id}\nЗапрос произошёл в {date}"
+    text = f"Запрос об отмене заявки на участие в конфенеции {conference_id} от автора с id {author_id}\nЗапрос произошёл в {date}"
 
     # формируем тело письма
     body = "\r\n".join((f"From: {user}", f"To: {to}",
