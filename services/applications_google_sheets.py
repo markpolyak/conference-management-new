@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 from typing import Optional
 import smtplib
+from functools import reduce
 
 from helpers.conference_helper import get_conferences, get_conference_sheet_id, get_sheet_by_id, get_authors_by_id
 from services.mail_mailru import send_mail
@@ -42,7 +43,9 @@ def add_application(conference_id, application):
 
     record = application.dict()
 
-    record['id'] = len(sheet.get_all_records()) + 1
+    id = reduce(lambda x, y: x if x['id'] > y['id'] else y, sheet.get_all_records())['id'] + 1
+
+    record['id'] = id
     record['submitted_at'] = datetime.now().astimezone().isoformat()
     record['updated_at'] = record['submitted_at']
 
