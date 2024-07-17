@@ -4,10 +4,11 @@ from pydantic import BaseModel, field_validator
 from fastapi import FastAPI, status, Header, HTTPException
 from dotenv import load_dotenv, find_dotenv
 from os import getenv
+
 load_dotenv(find_dotenv())
 
 app = FastAPI()
-account = gspread.service_account(filename=getenv("CREDIT_JSON"))
+account = gspread.service_account(filename=getenv("LOGIN_JSON"))
 
 sheet = account.open_by_key(getenv("SHEET_ID"))
 conf_page = sheet.sheet1
