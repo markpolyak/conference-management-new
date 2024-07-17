@@ -1,16 +1,15 @@
-import json
 import datetime
 import gspread
-from gspread.worksheet import JSONResponse
 from pydantic import BaseModel, field_validator
-from fastapi import FastAPI, status, Header, HTTPException, Query
-import config
-
+from fastapi import FastAPI, status, Header, HTTPException
+from dotenv import load_dotenv, find_dotenv
+from os import getenv
+load_dotenv(find_dotenv())
 
 app = FastAPI()
-account = gspread.service_account(filename=config.LOGIN_JSON)
+account = gspread.service_account(filename=getenv("CREDIT_JSON"))
 
-sheet = account.open_by_key(config.SHEET)
+sheet = account.open_by_key(getenv("SHEET_ID"))
 conf_page = sheet.sheet1
 conference_head = [
     "google_spreadsheet",
@@ -86,7 +85,7 @@ class ConfPost(BaseModel):
 
 
 def verify_token(token):
-    return token == config.BEARER_TOKEN
+    return token == getenv("BEARER_TOKEN")
 
 
 def get_current_date():
