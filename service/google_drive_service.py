@@ -1,5 +1,4 @@
 from tempfile import NamedTemporaryFile
-
 from fastapi import UploadFile, HTTPException
 from pydrive.drive import GoogleDrive
 
@@ -26,7 +25,7 @@ async def upload_file(drive: GoogleDrive, file: UploadFile, folder_id: str):
     if file.filename == "":
         raise HTTPException(400, "File to upload has not been selected")
 
-    if file.content_type != "application/pdf":
+    if file.content_type not in ["application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
         raise HTTPException(400, "Invalid file type. Only PDF files are allowed")
 
     with NamedTemporaryFile(delete=False) as temp_file:

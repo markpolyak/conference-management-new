@@ -5,7 +5,6 @@ from datetime import datetime
 
 import config
 
-
 def get_info_by_conference_id(conference_id: int, sheets_service: Client):
     sheet = sheets_service.open_by_key(config.CONFERENCES_SPREADSHEET_ID).sheet1
     data = sheet.get_all_records()
