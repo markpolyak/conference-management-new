@@ -1,5 +1,5 @@
 import datetime
-
+from datetime import datetime
 from fastapi import HTTPException
 
 
@@ -16,11 +16,14 @@ def get_participants_table_key_by_conference_id(conference_id: int, gc):
         # Получение всех записей из таблицы
         records = worksheet.get_all_records()
         for record in records:
-            if record['id'] == conference_id:
-                if record['registration_end_date'] < datetime.datetime.now().astimezone().isoformat():
+            if record['conference_id'] == conference_id:
+                date_str = record['registration_end_date']
+                date_obj = datetime.strptime(date_str, '%d.%m.%Y')
+                iso_format_date = date_obj.isoformat()
+                if iso_format_date < datetime.now().astimezone().isoformat():
                     raise HTTPException(status_code=403, detail="Registration is closed")
                 else:
-                    return [record['google_spreadsheet'], record['folder_id'], record['registration_end_date']]
+                    return [record['spreadsheet_id'], record['gdrive_folder_id'], iso_format_date]
 
         raise HTTPException(status_code=404, detail="Conference not found")
     except Exception as e:

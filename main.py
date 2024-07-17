@@ -70,15 +70,15 @@ def only_one_check(email, telegram_id, discord_id):
 async def get_google_sheet_data(conference_id):
     if conference_id in cache:
         table_key, folder_id, registration_end_date = cache[conference_id]
-        if registration_end_date < datetime.datetime.now().astimezone().isoformat():
+        if registration_end_date < datetime.now().astimezone().isoformat():
             table_key, folder_id, registration_end_date = get_participants_table_key_by_conference_id(conference_id, gc)
             cache[conference_id] = (table_key, folder_id, registration_end_date)
-            if registration_end_date < datetime.datetime.now().astimezone().isoformat():
+            if registration_end_date < datetime.now().astimezone().isoformat():
                 raise HTTPException(status_code=403, detail="Registration is closed")
     else:
         table_key, folder_id, registration_end_date = get_participants_table_key_by_conference_id(conference_id, gc)
         cache[conference_id] = (table_key, folder_id, registration_end_date)
-        if registration_end_date < datetime.datetime.now().astimezone().isoformat():
+        if registration_end_date < datetime.now().astimezone().isoformat():
             raise HTTPException(status_code=403, detail="Registration is closed")
     worksheet = gc.open_by_key(table_key).sheet1
     records = worksheet.get_all_records()
@@ -163,6 +163,7 @@ async def upload_application(conference_id: int, application_id: int,
                              publication_title: str = Form(...), keywords: str = Form(None), abstract: str = Form(None),
                              file: UploadFile = File(...)):
     try:
+
         only_one_check(email, telegram_id, discord_id)
         data = get_participants_table_key_by_conference_id(conference_id, gc)
         table_key, folder_id = data[0], data[1]
@@ -172,8 +173,8 @@ async def upload_application(conference_id: int, application_id: int,
             if record['id'] == application_id:
                 # print(email, record['email'])
                 if ((email and email == record['email']) or
-                        (telegram_id and telegram_id == record['telegram_id']) or
-                        (discord_id and discord_id == record['discord_id'])):
+                        (telegram_id and telegram_id == str(record['telegram_id'])) or
+                        (discord_id and discord_id == str(record['discord_id']))):
 
                     file_url = await upload_file(file, folder_id)
 
@@ -201,7 +202,7 @@ async def upload_application(conference_id: int, application_id: int,
                         Cell(record['id'] + 1, headers.index("download_url") + 1, file_url),
                         Cell(record['id'] + 1, headers.index("publication_title") + 1, publication_title),
                         Cell(record['id'] + 1, headers.index("upload_date") + 1,
-                             datetime.datetime.now().astimezone().isoformat()),
+                             datetime.now().astimezone().isoformat()),
                         Cell(record['id'] + 1, headers.index("review_status") + 1, "in progress")
                     ]
 
@@ -220,7 +221,7 @@ async def upload_application(conference_id: int, application_id: int,
                     return {
                         'id': record['id'],
                         'publication_title': publication_title,
-                        'upload_date': datetime.datetime.now().astimezone().isoformat(),
+                        'upload_date': datetime.now().astimezone().isoformat(),
                         'review_status': "in progress",
                         'download_url': file_url,
                         'keywords': keywords,
@@ -251,22 +252,23 @@ async def update_application(conference_id: int, application_id: int,
             if record['id'] == application_id:
                 print(discord_id, record['discord_id'])
                 if ((email and email == record['email']) or
-                        (telegram_id and telegram_id == record['telegram_id']) or
-                        (discord_id and discord_id == record['discord_id'])):
+                        (telegram_id and telegram_id == str(record['telegram_id'])) or
+                        (discord_id and discord_id == str(record['discord_id']))
+                ):
                     file_url = await upload_file(file, folder_id)
                     headers = worksheet.row_values(1)
 
                     cells = [
                         Cell(record['id'] + 1, headers.index("download_url") + 1, file_url),
                         Cell(record['id'] + 1, headers.index("upload_date") + 1,
-                             datetime.datetime.now().astimezone().isoformat()),
+                             datetime.now().astimezone().isoformat()),
                         Cell(record['id'] + 1, headers.index("review_status") + 1, "in progress")
                     ]
                     worksheet.update_cells(cells)
                     return {
                         'id': record['id'],
                         'publication_title': record['publication_title'],
-                        'upload_date': datetime.datetime.now().astimezone().isoformat(),
+                        'upload_date': datetime.now().astimezone().isoformat(),
                         'review_status': "in progress",
                         'download_url': file_url,
                         'keywords': record['keywords'],
@@ -313,7 +315,7 @@ async def update_metadata(conference_id: int, application_id: int,
                     return {
                         'id': record['id'],
                         'publication_title': publication_title if publication_title else record['publication_title'],
-                        'upload_date': datetime.datetime.now().astimezone().isoformat(),
+                        'upload_date': record['upload_date'],
                         'review_status': record['review_status'],
                         'download_url': record['download_url'],
                         'keywords': keywords if keywords else record['keywords'],
