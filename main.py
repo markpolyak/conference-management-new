@@ -55,7 +55,8 @@ def get_publications_by_conference_id(conference_id: int):
     return publications_sheet.sheet1.get_all_records()
 
 @app.get("/conferences/{conference_id}/publications")
-async def get_publications(conference_id: int, telegram_id: str = None, discord_id: str = None, email: str = None):
+async def get_publications(conference_id: int, telegram_id: str = None,
+                           discord_id: str = None, email: str = None):
     print(os.getenv("CONFERENCES_SPREADSHEET_ID"))
     try:
         user_id_key, user_id_value = check_user_id(telegram_id, discord_id, email)
@@ -83,7 +84,8 @@ async def get_publications(conference_id: int, telegram_id: str = None, discord_
         raise HTTPException(500, "Inner server exception")
 
 @app.get("/conferences/{conference_id}/applications/{application_id}/publication")
-async def get_publication(conference_id: int, application_id: int, telegram_id: str = None, discord_id: str = None, email: str = None):
+async def get_publication(conference_id: int, application_id: int, telegram_id: str = None,
+                          discord_id: str = None, email: str = None):
     try:
         user_id_key, user_id_value = check_user_id(telegram_id, discord_id, email)
         records = get_publications_by_conference_id(conference_id)
@@ -111,7 +113,8 @@ async def get_publication(conference_id: int, application_id: int, telegram_id: 
 
 @app.post("/conferences/{conference_id}/applications/{application_id}/publication")
 async def add_publication(conference_id: int, application_id: int,
-                          publication: Publication = Depends(get_form_data_publication), file: UploadFile = File(...)):
+                          publication: Publication = Depends(get_form_data_publication),
+                          file: UploadFile = File(...)):
     try:
         user_id_key, user_id_value = check_user_id(publication.telegram_id, publication.discord_id, publication.email)
         records = get_publications_by_conference_id(conference_id)

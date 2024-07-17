@@ -26,7 +26,7 @@ async def upload_file(drive: GoogleDrive, file: UploadFile, folder_id: str):
         raise HTTPException(400, "File to upload has not been selected")
 
     if file.content_type not in ["application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
-        raise HTTPException(400, "Invalid file type. Only PDF files are allowed")
+        raise HTTPException(400, "Invalid file type. Only doc or docx files are allowed")
 
     with NamedTemporaryFile(delete=False) as temp_file:
         temp_file.write(file.file.read())
