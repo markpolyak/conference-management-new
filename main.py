@@ -25,7 +25,7 @@ RANGE_CONFERENCES = os.getenv("RANGE_CONFERENCES")
 TOKEN = os.getenv("TOKEN")
 
 # SCOPES='https://www.googleapis.com/auth/spreadsheets.readonly'
-# SERVICE_ACCOUNT_FILE = 'guap.json'
+# SERVICE_ACCOUNT_FILE = 'connection.json'
 # CONFERENCES_SPREADSHEET_ID = '1MRQh6y3QUPrdm43z_R35tOu9ddHDH23liOxZ8xEWLNg'
 # RANGE_REPORTS = 'Заявки!A:S'
 # RANGE_COAUTORS = 'Авторы!A:J'
@@ -83,16 +83,15 @@ def reports_coautors_fusion(reports, collaborators):
     return reports
 
 def generate_document(conference_id: int, generate_func, filename: str, authorization: str):
+    token = authorization.split("Bearer ")[-1] if authorization else ''
+    if not verify_token(token):
+        raise HTTPException(status_code=401, detail="Invalid token")
     conferences = get_data(RANGE_CONFERENCES, CONFERENCES_SPREADSHEET_ID)
     for index, row in conferences.iterrows():
         if str(conference_id) == row['conference_id']:
             if row['spreadsheet_id'] == '':
                 raise HTTPException(status_code=404, detail="spreadsheet_id is empty")
             short_name = row['name_rus_short'] if row['name_rus_short'] is not None else ''
-
-            token = authorization.split("Bearer ")[-1] if authorization else ''
-            if not verify_token(token):
-                raise HTTPException(status_code=401, detail="Invalid token")
 
             reports = get_data(RANGE_REPORTS, row['spreadsheet_id'])
             collaborators = get_data(RANGE_COAUTORS, row['spreadsheet_id'])
