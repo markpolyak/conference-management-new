@@ -37,7 +37,7 @@ class ConfPut(BaseModel):
 
     @field_validator('registration_start_date', 'registration_end_date', 'submission_start_date', 'submission_end_date',
                      'conf_start_date', 'conf_end_date')
-    def validate_date(cls, value):
+    def validate_date(self, value):
         try:
             datetime.strptime(value, '%d.%m.%Y')
         except ValueError:
@@ -64,7 +64,7 @@ class ConfPost(BaseModel):
 
     @field_validator('registration_start_date', 'registration_end_date', 'submission_start_date', 'submission_end_date',
                      'conf_start_date', 'conf_end_date')
-    def validate_date(cls, value):
+    def validate_date(self, value):
         try:
             datetime.strptime(value, '%d.%m.%Y')
         except ValueError:
