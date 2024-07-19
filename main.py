@@ -60,7 +60,8 @@ def get_data(range_cells, spreadsheet_id):
         
         # Заполняем отсутствующие значения пустыми строками
         data = data.fillna('')
-
+        
+        print(data)
         return data
     
 def verify_token(token: str):
@@ -83,14 +84,16 @@ def reports_coautors_fusion(reports, collaborators):
     return reports
 
 def generate_document(conference_id: int, generate_func, filename: str, authorization: str):
-    token = authorization.split("Bearer ")[-1] if authorization else ''
-    if not verify_token(token):
-        raise HTTPException(status_code=401, detail="Invalid token")
     conferences = get_data(RANGE_CONFERENCES, CONFERENCES_SPREADSHEET_ID)
     for index, row in conferences.iterrows():
         if str(conference_id) == row['conference_id']:
             if row['spreadsheet_id'] == '':
                 raise HTTPException(status_code=404, detail="spreadsheet_id is empty")
+
+            token = authorization.split("Bearer ")[-1] if authorization else ''
+            if not verify_token(token):
+                raise HTTPException(status_code=401, detail="Invalid token")
+
             short_name = row['name_rus_short'] if row['name_rus_short'] is not None else ''
 
             reports = get_data(RANGE_REPORTS, row['spreadsheet_id'])
