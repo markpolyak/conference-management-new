@@ -1,0 +1,73 @@
+@keyframes popup {
+   0% {
+     transform: scale(0.7);
+   }
+ 
+   100% {
+     transform: scale(1);
+   }
+ }
+ 
+ .modal {
+   position: fixed;
+   top: 0;
+   bottom: 0;
+   right: 0;
+   left: 0;
+   display: none;
+   background-color: rgba(18, 17, 17, 0.9);
+   width: 100vw;
+   height: 100vh;
+   padding: 0px 10px;
+ }
+ 
+ .modal.active {
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   z-index: 9999;
+ }
+ 
+ .content {
+    background-color: #323232;
+   border-radius: 10px;
+   display: flex;
+   flex-direction: column;
+   animation: popup 0.3s;
+    margin: 100px 0;
+ 
+ 
+   &__header {
+     border-bottom: 2px solid #5d5d5d;
+     display: none;
+     justify-content: space-between;
+     align-items: center;
+ 
+     padding: 18px 15px;
+     font-size: 1.25em;
+     font-weight: 700;
+     padding: 25px 30px;
+    //  background-color: $white-dark;
+    //  box-shadow: var(--box-shadow-primary);
+    //  border-bottom: 1px solid var(--text-primary);
+ 
+     svg {
+       cursor: pointer;
+       font-weight: 700;
+       font-size: 1.3em;
+       margin-right: 5px;
+     }
+   }
+
+   &__title {
+    font-size: 1.1em;
+   }
+ }
+
+ .active {
+  display: flex;
+ }
+
+//  body .active {
+//   overflow-y: hidden;
+//  }

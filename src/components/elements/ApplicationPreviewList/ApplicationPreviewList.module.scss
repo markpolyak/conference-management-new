@@ -1,0 +1,23 @@
+.app-list {
+   padding: 50px 0px;
+
+   &__container {
+      display: flex;
+      flex-direction: column;
+      row-gap: 25px;
+   }
+
+   &__title {
+      font-size: 1.4em;
+      font-weight: 600;
+      margin-bottom: 30px;
+   }
+
+   &__empty {
+      color: rgb(211, 210, 210);
+      font-weight: 600;
+      font-size: 0.95em;
+      color: rgb(246, 30, 30);
+   }
+   
+}

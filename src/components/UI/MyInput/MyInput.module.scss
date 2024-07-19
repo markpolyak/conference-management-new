@@ -1,0 +1,56 @@
+.label {
+    display: flex;
+    flex-direction: column;
+    row-gap: 7px;
+    font-size: 0.93em;
+    font-weight: 500;
+    color: rgb(232, 232, 232);
+
+    svg {
+      font-size: 0.35em;
+      margin-bottom: 6px;
+      margin-left: 2px;
+      color: rgb(237, 59, 59);
+      display: none;
+    }
+
+    .active svg {
+      display: inline-block;
+    }
+}
+
+.input {
+  padding: 9px 12px;
+  border-radius: 7px;
+  width: 100%;
+  font-size: 0.88em;
+  background-color: #505050;
+  color: rgb(221, 219, 219);
+  max-height: 32.49px;
+
+  &:focus {
+    outline: none;
+  }
+
+  &:-webkit-autofill,
+  &:-webkit-autofill:hover, 
+  &:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0px 1000px #505050 inset;
+    -webkit-color: rgb(221, 219, 219);
+    -webkit-text-fill-color: rgb(221, 219, 219);
+    border: 1px solid #505050;
+  }
+
+  &::placeholder {
+    color: rgb(136, 135, 135);
+    font-size: 0.94em;
+  }
+}
+
+.error {
+    height: 24px;
+    color: rgb(236, 33, 33);
+    font-size: 0.71em;
+    margin: 3px 0px 0px 2px;
+}
+

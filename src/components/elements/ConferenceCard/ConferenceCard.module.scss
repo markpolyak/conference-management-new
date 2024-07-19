@@ -1,0 +1,155 @@
+.conference {
+
+
+   &__body {
+      // -ms-flex-preferred-size: calc(33.33333% - 30px);
+      // flex-basis: calc(33.33333% - 30px);
+      margin: 0 0px 30px;
+      cursor: pointer;
+      overflow: hidden;
+      border-radius: 28px;
+      max-width: 300px;
+      width: 100%;
+      box-shadow: rgba(65, 65, 65, 0.55) 0px 13px 27px -5px, rgba(9, 9, 9, 0.9) 0px 8px 16px -8px;
+   }
+}
+
+ .body__link {
+   display: block;
+   padding: 30px 25px;
+   background-color: #323232;
+ 
+   overflow: hidden;
+   min-height: 205px;
+   position: relative;
+   transition: transform 2.2s ease-in-out;
+ }
+ .body__link:hover,
+ .body__link:hover .body__date {
+   text-decoration: none;
+   color: #FFF;
+ }
+
+ .body__link:hover .body__title_en {
+   text-decoration: none;
+   color: #FFF;
+ }
+ .body__link:hover .body__bg {
+   -webkit-transform: scale(10);
+   -ms-transform: scale(10);
+   transform: scale(10);
+ }
+
+.title__box {
+  min-height: 95px;
+
+  // padding: 0 3px 0 0;
+
+  overflow: hidden;
+
+  font-weight: bold;
+  font-size: 21px;
+  color: #FFF;
+
+  z-index: 2;
+  position: relative;
+}
+
+ .body__title {
+  overflow-wrap: break-word;
+
+    &_en {
+      transition: color 0.2s ease-in-out;
+      margin: 5px 0 20px;
+      color: #cdcccc;
+      font-size: 0.62em;
+      font-weight: 400;
+
+    }
+ }
+ .body__date-box {
+   font-size: 14px;
+   color: #FFF;
+ 
+   z-index: 2;
+   position: relative;
+   margin-bottom: 2px;
+ }
+ .body__date {
+   font-weight: bold;
+   color: #f9b234;
+ 
+   -webkit-transition: color .5s ease;
+   -o-transition: color .5s ease;
+   transition: color .5s ease;
+   margin-left: 5px;
+   margin-top: auto;
+ }
+ .body__bg {
+   height: 128px;
+   width: 128px;
+   background-color: #f9b234;
+ 
+   z-index: 1;
+   position: absolute;
+   top: -75px;
+   right: -75px;
+ 
+   border-radius: 50%;
+ 
+   -webkit-transition: all .5s ease;
+   -o-transition: all .5s ease;
+   transition: all .5s ease;
+ }
+.green{
+   background-color: #3ecd5e;
+ }
+.red{
+   background-color: #e44002;
+ }
+.purple{
+   background-color: #952aff;
+ }
+.pink{
+   background-color: #cd3e94;
+ }
+.blue{
+   background-color: #4c49ea;
+ }
+ 
+ 
+ 
+ @media only screen and (max-width: 979px) {
+   .conference__body {
+     -ms-flex-preferred-size: calc(50% - 30px);
+     flex-basis: calc(50% - 30px);
+   }
+   .body__title {
+     font-size: 24px;
+   }
+ }
+ 
+ @media only screen and (max-width: 767px) {
+   .conference {
+     width: 96%;
+   }
+ 
+ }
+ @media only screen and (max-width: 639px) {
+   .conference__body {
+     -ms-flex-preferred-size: 100%;
+     flex-basis: 100%;
+   }
+   .body__title {
+     min-height: 72px;
+     line-height: 1;
+ 
+     font-size: 24px;
+   }
+   .body__link {
+     padding: 22px 40px;
+   }
+   .body__date-box {
+     font-size: 16px;
+   }
+ }
