@@ -1,0 +1,36 @@
+.listContainer {
+    margin: 16px auto;
+    max-width: 1300px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: auto;
+    gap: 16px;
+}
+
+.conferenceItem {
+    background-color: var(--light-black);
+    color:white;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 24px;
+    border-radius: 12px;
+    transition: 0.2s;
+    text-decoration: none;
+}
+
+.conferenceItem:hover {
+    background-color: var(--light-black-hover);
+}
+
+.dateBlock {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+}
+
+.select {
+    position: absolute;
+    top:70px;
+    right: 25px;
+    width: 123px;
+}

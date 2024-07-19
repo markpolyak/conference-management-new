@@ -1,0 +1,18 @@
+[
+    {
+        "id": 1,
+        "name_rus": "76-я международная студенческая научная конференция ГУАП",
+        "name_rus_short": "МСНК-2023",
+        "name_eng": "",
+        "name_eng_short": "",
+        "registration_start_date": "13.07.2024", 
+        "registration_end_date": "20.07.2024",
+        "submission_start_date": "01.07.2024",
+        "submission_end_date": "19.07.2024",
+        "conf_start_date": "17.04.2024",
+        "conf_end_date": "21.04.2024",
+        "organized_by": "ГУАП",
+        "url": "https://guap.ru/msnk/",
+        "email": "example@example.com"
+    }
+]

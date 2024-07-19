@@ -1,0 +1,153 @@
+.container {
+    background-color: var(--black);
+    color:white;
+    margin: 16px;
+    border-radius: 12px;
+    padding: 16px 24px;
+}
+
+.filePicker {
+    display: none;
+}
+
+.titleBlock {
+    border-bottom: 1px solid white;
+    padding-bottom: 8px;
+    margin-bottom: 16px;  
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.uploadText {
+    margin-left: 5px;
+}
+
+.anchorFile {
+    color:white;
+}
+
+.dateBlock {
+    margin-top: 18px;
+    display: flex;
+    gap: 18px;
+}
+
+.dateItem {
+    display: flex;
+    flex-direction: column;
+}
+
+.urlBlock {
+    color: white;
+}
+
+.informBlock {
+    display: flex;
+    flex-direction: column;
+    font-size: 1.4em;
+}
+
+.informData {
+    display: flex;
+}
+
+.leftBlock {
+    width: 160px;
+}
+
+.applicationTitle {
+    border-bottom: 1px solid white;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.applicationList {
+    display: grid;
+    grid-template-columns: repeat(2,1fr);
+    gap: 16px;
+}
+
+.applicationItem {
+    background-color: var(--light-black);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.applicationItemTitle {
+    width: 150px;
+}
+
+.applicationDateBlock {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid white;
+    margin-top: 8px;
+    padding-top: 8px;
+    font-weight: bold;
+}
+
+.applicationItemBlock {
+    display: flex;
+}
+
+.formTitle {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 6px 0 6px 0;
+}
+
+.text {
+    margin-top: 8px;
+    position: absolute;
+    color:rgb(160, 160, 160);
+    font-weight: 200;
+    display: block;
+}
+
+.coauthorsBlock {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 6px 0;
+}
+
+.coauthorInputs {
+    display: grid;
+    grid-template-columns: 20px repeat(4,1fr);
+    gap: 5px;
+}
+
+.modal input {
+    margin-bottom: 5px;
+}
+
+.button {
+    width: 40px;
+}
+
+.editButtons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.count {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin: 0 20px;
+}
+
+.coauthorIndex {
+    font-size: 1.1em;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
