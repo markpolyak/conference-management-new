@@ -19,6 +19,6 @@ def get_info_by_conference_id(conference_id: int, sheets_service: Client):
                     "registration_end_date": row["registration_end_date"]
                 }
             else:
-                raise HTTPException(403, "The registration time has passed")
+                raise HTTPException(403, "Время регистрации прошло.")
 
-    raise HTTPException(404, "Invalid conference id")
+    raise HTTPException(404, "Неправильный идентификатор конференции.")

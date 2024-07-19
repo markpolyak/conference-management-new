@@ -1,5 +1,6 @@
 import os
 import re
+import traceback
 from datetime import datetime
 
 import gspread
@@ -38,7 +39,7 @@ def check_user_id(telegram_id: str = None, discord_id: str = None, email: str = 
         first_key = next(iter(result))
         return first_key, result[first_key]
     else:
-        raise HTTPException(403, "Only one of the three fields: telegram_id, discord_id, email must not be null")
+        raise HTTPException(403, "Только одно из полей: telegram_id, discord_id, email не должно быть пустым")
 
 def update_cells(publication_info: dict, conference_id: int):
     info = get_info_by_conference_id(conference_id, gspread_client)
@@ -76,12 +77,11 @@ async def get_publications(conference_id: int, telegram_id: str = None,
         if len(result) != 0:
             return result
         else:
-            raise HTTPException(404, "Invalid user id: no publications was found")
+            raise HTTPException(404, "Неправильный идентификатор пользователя: не было найдено публикаций.")
     except HTTPException as ex:
         raise ex
-    except Exception as ex:
-        print(type(ex))
-        raise HTTPException(500, "Inner server exception")
+    except Exception:
+        raise HTTPException(500, "Внутренняя ошибка сервера.")
 
 @app.get("/conferences/{conference_id}/applications/{application_id}/publication")
 async def get_publication(conference_id: int, application_id: int, telegram_id: str = None,
@@ -91,7 +91,7 @@ async def get_publication(conference_id: int, application_id: int, telegram_id: 
         records = get_publications_by_conference_id(conference_id)
 
         for record in records:
-            if (record["id"] == application_id) & (record["upload_date"] != ""):
+            if record["id"] == application_id:
                 if str(record[user_id_key]) == user_id_value:
                     return {
                         "id": record["id"],
@@ -103,13 +103,13 @@ async def get_publication(conference_id: int, application_id: int, telegram_id: 
                         "abstract": record["abstract"]
                     }
                 else:
-                    raise HTTPException(403, "Invalid user id: publication uploaded by another user")
+                    raise HTTPException(403, "Неправильный идентификатор пользователя: публикация была загружена другим пользователем.")
 
-        raise HTTPException(404, "Invalid publication id")
+        raise HTTPException(404, "Неправильный идентификатор заявки.")
     except HTTPException as ex:
         raise ex
-    except Exception as ex:
-        raise HTTPException(500, "Inner server exception")
+    except Exception:
+        raise HTTPException(500, "Внутренняя ошибка сервера.")
 
 @app.post("/conferences/{conference_id}/applications/{application_id}/publication")
 async def add_publication(conference_id: int, application_id: int,
@@ -129,12 +129,12 @@ async def add_publication(conference_id: int, application_id: int,
                             "id": record["id"],
                         }
                     else:
-                        raise HTTPException(403, "Invalid user id: publication uploaded by another user")
+                        raise HTTPException(403, "Неправильный идентификатор пользователя: публикация была загружена другим пользователем.")
                 else:
-                    raise HTTPException(403, "The publication file has already been uploaded, use the put method to change")
+                    raise HTTPException(403, "Публикация уже была загружена, используйте метод put для изменения документа публикации.")
 
         if len(publication_info) == 0:
-            raise HTTPException(404, "Invalid publication id")
+            raise HTTPException(404, "Нерпвильный идентификатор заявки.")
 
         link = await upload_file(drive, file, get_info_by_conference_id(conference_id, gspread_client)["folder_id"])
 
@@ -155,7 +155,7 @@ async def add_publication(conference_id: int, application_id: int,
     except HTTPException as ex:
         raise ex
     except Exception:
-        raise HTTPException(500, "Inner server exception")
+        raise HTTPException(500, "Внутренняя ошибка сервера.")
 
 @app.put("/conferences/{conference_id}/applications/{application_id}/publication")
 async def update_publication(conference_id: int, application_id: int,
@@ -179,11 +179,11 @@ async def update_publication(conference_id: int, application_id: int,
                             "abstract": record["abstract"]
                         }
                     else:
-                        raise HTTPException(403, "Invalid user id: publication uploaded by another user")
+                        raise HTTPException(403, "Неправильный идентификатор пользователя: публикация была загружена другим пользователем.")
                 else:
-                    raise HTTPException(400, "The publication file has not been uploaded yet to change it")
+                    raise HTTPException(400, "Документ публикации еще не был выложен, используйте метод post для добавления документа.")
         if len(publication_info) == 0:
-            raise HTTPException(404, "Invalid publication id")
+            raise HTTPException(404, "Неправильный идентификатор заявки.")
 
         if publication_info["download_url"]:
             pattern = r'id=([^&]+)'
@@ -206,9 +206,8 @@ async def update_publication(conference_id: int, application_id: int,
         return publication_info
     except HTTPException as ex:
         raise ex
-    except Exception as ex:
-        print(type(ex))
-        raise HTTPException(500, "Inner server exception")
+    except Exception:
+        raise HTTPException(500, "Внутренняя ошибка сервера.")
 
 @app.patch("/conferences/{conference_id}/applications/{application_id}/publication")
 async def update_meta_data(conference_id: int, application_id: int,
@@ -232,10 +231,10 @@ async def update_meta_data(conference_id: int, application_id: int,
                         "abstract": record["abstract"]
                     }
                 else:
-                    raise HTTPException(403, "Invalid user id: publication uploaded by another user")
+                    raise HTTPException(403, "Неправильный идентификатор пользователя: публикация была загружена другим пользователем.")
 
         if len(publication_info) == 0:
-            raise HTTPException(404, "Invalid publication id")
+            raise HTTPException(404, "Неправильный идентификатор заяки.")
 
         if meta_data.abstract:
             publication_info["abstract"] = meta_data.abstract
@@ -252,4 +251,4 @@ async def update_meta_data(conference_id: int, application_id: int,
     except HTTPException as ex:
         raise ex
     except Exception:
-        raise HTTPException(500, "Inner server exception")
+        raise HTTPException(500, "Внутренняя ошибка сервера.")
