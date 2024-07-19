@@ -114,10 +114,10 @@ def post_conferences(conf: ConfPost, authorization=Depends(security)):
 
     if authorization:
         token = authorization.credentials
-        if verify_token(token):
+        if not verify_token(token):
             raise HTTPException(status_code=403, detail="Unauthorized access")
-        else:
-            raise HTTPException(status_code=403, detail="Unauthorized access")
+    else:
+        raise HTTPException(status_code=403, detail="Unauthorized access")
 
     conference_data = list(conf.model_dump().values())
     conf_page.append_row(conference_data, table_range="A1")
@@ -131,10 +131,10 @@ def post_conferences(conf: ConfPost, authorization=Depends(security)):
 def put_conference(conference_id: int, change: ConfPut, authorization=Depends(security)):
     if authorization:
         token = authorization.credentials
-        if verify_token(token):
+        if not verify_token(token):
             raise HTTPException(status_code=403, detail="Unauthorized access")
-        else:
-            raise HTTPException(status_code=403, detail="Unauthorized access")
+    else:
+        raise HTTPException(status_code=403, detail="Unauthorized access")
 
     conference = get_conference_record(conference_id)
     if not conference:
