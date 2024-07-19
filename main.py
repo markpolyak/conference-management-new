@@ -1,11 +1,18 @@
+import smtplib
 import datetime
-import gspread
+from email.mime.text import MIMEText
 
+import gspread
 from fastapi import FastAPI, status, HTTPException, Depends
 from fastapi.security import HTTPBearer
 from dotenv import load_dotenv, find_dotenv
 from os import getenv
+
+from gspread import Worksheet
+
 from models.Conf import conference_head, ConfPut, ConfPost
+from models.Application import *
+from models.Coauthor import *
 
 load_dotenv(find_dotenv())
 
@@ -90,7 +97,6 @@ def get_conferences(filter: str | None = None):
     return conferences
 
 
-
 @app.get("/conferences/{conference_id}")
 def get_conference(conference_id: int, authorization=Depends(security)):
     authorized = False
@@ -153,3 +159,163 @@ def put_conference(conference_id: int, change: ConfPut, authorization=Depends(se
     conference["conference_id"] = conference_id
 
     return conference
+
+
+# -----------------------------------------------------------------------------
+
+
+def construct_application_dict(row: list, idx: int, author_page: Worksheet | None = None) -> dict | None:
+    if not row:
+        return None
+    application = dict(zip(application_headers, row))
+    application["id"] = idx
+    coauthors = []
+    if author_page:
+        author_data = author_page.get_all_values()
+        for coauthor_row in author_data:
+            coauthor = dict(zip(["id"] + coathor_headers, coauthor_row))
+            if coauthor["id"] == str(application["id"]) and \
+                    not all(coauthor.get(key) == application.get(key) for key in coathor_headers):
+                coauthor.pop("id")
+                coauthors.append(coauthor)
+
+    application["coauthors"] = coauthors
+    return application
+
+
+def serialize_application_to_list(appl_original: dict) -> (list, list):
+    application = appl_original.copy()
+    coauthors = application.pop("coauthors", [])
+    idx = application.pop("id", None)
+    application_list = list(application.values())
+
+    coauthor_list = [[idx] + [application.get(key) for key in coathor_headers]]
+
+    coauthor_list.extend([[idx] + [coauthor.get(key) for key in coathor_headers] for coauthor in coauthors])
+
+    return application_list, coauthor_list
+
+
+def send_delete_email(author_id, recipients, application_id, conference_id):
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        now = datetime.datetime.now().astimezone().strftime("%d.%m.%Y %H:%M:%S")
+        email_text = (getenv("DELETE_MESSAGE_TEXT").format(author_id, now, application_id, conference_id))
+        msg = MIMEText(email_text)
+        msg["Subject"] = getenv("DELETE_MESSAGE_SUBJECT")
+        msg["To"] = recipients
+        msg["From"] = f"{getenv('GMAIL')}"
+        smtp_server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        smtp_server.login(getenv("GMAIL"), getenv("GMAIL_PASS"))
+        smtp_server.sendmail(msg["From"], recipients, msg.as_string())
+        smtp_server.quit()
+
+
+def patch_authors_page(page, idx, new_authors):
+    old_authors = page.get_all_values()
+    updated_authors = [author for author in old_authors if author[0] != str(idx)]
+    updated_authors.extend(new_authors)
+    page.clear()
+    page.update('A1', updated_authors)
+
+
+@app.post("/conferences/{conference_id}/applications")
+def add_application(conference_id: int, application: Application):
+    sheet_id = get_conference_record(conference_id)["spreadsheet_id"]
+    app_page = account.open_by_key(sheet_id).worksheet(getenv("APPLICATION_TITLE"))
+    author_page = account.open_by_key(sheet_id).worksheet(getenv("AUTHOR_TITLE"))
+
+    new_application = application.model_dump()
+
+    now = datetime.datetime.now().astimezone().isoformat()
+    new_application.update({"submitted_at": now, "updated_at": now})
+    data = app_page.get_all_values()
+    new_application["id"] = len(data) + 1 if data != [[]] else 1
+
+    appl, coathors = serialize_application_to_list(new_application)
+
+    app_page.append_row(appl)
+    for coauthor in coathors:
+        author_page.append_row(coauthor)
+    return new_application
+
+
+@app.get("/conferences/{conference_id}/applications")
+def get_applications(conference_id: int, email: str | None = None, telegram_id: str | None = None,
+                     discord_id: str | None = None):
+    if sum([bool(email), bool(telegram_id), bool(discord_id)]) != 1:
+        raise HTTPException(status_code=400,
+                            detail="Exactly one of 'email', 'telegram_id' or 'discord_id' must be provided")
+    applications = []
+    sheet_id = get_conference_record(conference_id)["spreadsheet_id"]
+    app_page = account.open_by_key(sheet_id).worksheet(getenv("APPLICATION_TITLE"))
+    author_page = account.open_by_key(sheet_id).worksheet(getenv("AUTHOR_TITLE"))
+
+    app_data = app_page.get_values()
+    for idx, row in enumerate(app_data, start=1):
+
+        # record = make_application_record(row, idx)
+        record = dict(zip(application_headers, row))
+        record = construct_application_dict(row, idx, author_page)
+        print(record)
+        if record:
+            if (email and record['email'] == email) or (
+                    telegram_id and record['telegram_id'] == telegram_id) or (
+                    discord_id and record['discord_id'] == discord_id):
+                applications.append(record)
+
+    if not applications:
+        raise HTTPException(status_code=404, detail="No applications found")
+    return applications
+
+
+@app.patch("/conferences/{conference_id}/applications/{application_id}")
+def edit_application(conference_id: int, application_id: int, application: ApplicationPatch):
+    sheet_id = get_conference_record(conference_id)["spreadsheet_id"]
+    app_page = account.open_by_key(sheet_id).worksheet(getenv("APPLICATION_TITLE"))
+    author_page = account.open_by_key(sheet_id).worksheet(getenv("AUTHOR_TITLE"))
+
+    data = app_page.row_values(application_id)
+    existing_app = construct_application_dict(data, application_id, author_page)
+
+    if not existing_app:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    if (application.telegram_id and existing_app['telegram_id'] != application.telegram_id) or \
+            (application.discord_id and existing_app['discord_id'] != application.discord_id):
+        raise HTTPException(status_code=403, detail="telegram_id or discord_id mismatch")
+
+    for (key, value) in application.model_dump().items():
+        if value is not None and key not in ['telegram_id', 'discord_id']:
+            existing_app[key] = value
+
+    existing_app["updated_at"] = datetime.datetime.now().astimezone().isoformat()
+
+    new_application, new_coathors = serialize_application_to_list(existing_app)
+
+    if application.coauthors:
+        patch_authors_page(author_page, application_id, new_coathors)
+
+    app_page.update([new_application],
+                    f"A{application_id}:{get_column_letter(len(application_headers))}{application_id}")
+
+    return existing_app
+
+
+@app.delete("/conferences/{conference_id}/applications/{application_id}")
+def delete_application(conference_id: int, application_id: int, delete_request: DeleteRequest):
+    sheet_id = get_conference_record(conference_id)["spreadsheet_id"]
+    app_page = account.open_by_key(sheet_id).worksheet(getenv("APPLICATION_TITLE"))
+
+    data = app_page.row_values(application_id)
+    existing_app = construct_application_dict(data, application_id)
+    if not existing_app:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    if (delete_request.telegram_id and existing_app['telegram_id'] != delete_request.telegram_id) or \
+            (delete_request.discord_id and existing_app['discord_id'] != delete_request.discord_id) or \
+            (delete_request.email and existing_app['email'] != delete_request.email):
+        raise HTTPException(status_code=404, detail="Application not found")
+    conference = get_conference_record(conference_id)
+
+    send_delete_email(existing_app["email"], conference["email"], application_id, conference_id)
+    return {"message": "Для отмены заявки на участие в конференции свяжитесь с организаторами"}
