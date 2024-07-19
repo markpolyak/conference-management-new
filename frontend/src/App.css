@@ -1,0 +1,33 @@
+:root {
+    --black: rgb(24,24,27);
+    --dark-black: rgb(3,3,4);
+    --light-black: rgb(31,31,35);
+    --light-black-hover: rgb(42, 42, 48);
+}
+
+* {
+    box-sizing: border-box;
+    padding: 0px;
+    margin: 0px;
+    font-family: "Inter", sans-serif
+}
+
+body {
+    background-color: rgb(14,14,16);
+}
+
+#root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+footer {
+    margin-top: auto;
+    justify-self: flex-end;
+}
+
+h3 {
+    font-size: 24px;
+    margin: 16px 0;
+}

@@ -1,0 +1,19 @@
+.container {
+    background-color: var(--black);
+    height: 60px;
+    border-bottom: 1px solid var(--dark-black);
+    color:white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+}
+
+.anchor {
+    text-decoration: none;
+}
+
+.title {
+    font-size: 24px;
+    color: white;
+}
