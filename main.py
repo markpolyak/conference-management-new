@@ -1,6 +1,8 @@
 import datetime
 import gspread
-from fastapi import FastAPI, status, Header, HTTPException
+
+from fastapi import FastAPI, status, HTTPException, Depends
+from fastapi.security import HTTPBearer
 from dotenv import load_dotenv, find_dotenv
 from os import getenv
 from models.Conf import conference_head, ConfPut, ConfPost
@@ -8,6 +10,7 @@ from models.Conf import conference_head, ConfPut, ConfPost
 load_dotenv(find_dotenv())
 
 app = FastAPI()
+security = HTTPBearer(auto_error=False)
 account = gspread.service_account(filename=getenv("LOGIN_JSON"))
 
 sheet = account.open_by_key(getenv("SHEET_ID"))
@@ -87,11 +90,12 @@ def get_conferences(filter: str | None = None):
     return conferences
 
 
+
 @app.get("/conferences/{conference_id}")
-def get_conference(conference_id: int, authorization: str = Header(None)):
+def get_conference(conference_id: int, authorization=Depends(security)):
     authorized = False
-    if authorization and authorization.startswith("Bearer "):
-        token = authorization.split(" ")[1]
+    if authorization:
+        token = authorization.credentials
         if verify_token(token):
             authorized = True
         else:
@@ -106,13 +110,14 @@ def get_conference(conference_id: int, authorization: str = Header(None)):
 
 
 @app.post("/conferences")
-def post_conferences(conf: ConfPost, authorization: str = Header(None)):
-    if authorization and authorization.startswith("Bearer "):
-        token = authorization.split(" ")[1]
-        if not verify_token(token):
+def post_conferences(conf: ConfPost, authorization=Depends(security)):
+
+    if authorization:
+        token = authorization.credentials
+        if verify_token(token):
             raise HTTPException(status_code=403, detail="Unauthorized access")
-    else:
-        raise HTTPException(status_code=403, detail="Unauthorized access")
+        else:
+            raise HTTPException(status_code=403, detail="Unauthorized access")
 
     conference_data = list(conf.model_dump().values())
     conf_page.append_row(conference_data, table_range="A1")
@@ -123,13 +128,13 @@ def post_conferences(conf: ConfPost, authorization: str = Header(None)):
 
 
 @app.put("/conferences/{conference_id}")
-def put_conference(conference_id: int, change: ConfPut, authorization: str = Header(None)):
-    if authorization and authorization.startswith("Bearer "):
-        token = authorization.split(" ")[1]
-        if not verify_token(token):
+def put_conference(conference_id: int, change: ConfPut, authorization=Depends(security)):
+    if authorization:
+        token = authorization.credentials
+        if verify_token(token):
             raise HTTPException(status_code=403, detail="Unauthorized access")
-    else:
-        raise HTTPException(status_code=403, detail="Unauthorized access")
+        else:
+            raise HTTPException(status_code=403, detail="Unauthorized access")
 
     conference = get_conference_record(conference_id)
     if not conference:

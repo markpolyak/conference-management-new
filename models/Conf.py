@@ -1,5 +1,6 @@
 from pydantic import BaseModel, field_validator
 from datetime import datetime
+
 conference_head = [
     "spreadsheet_id",
     "name_rus",
@@ -18,6 +19,7 @@ conference_head = [
     "gdrive_folder_id"
 ]
 
+
 class ConfPut(BaseModel):
     spreadsheet_id: str | None = None
     name_rus: str | None = None
@@ -35,9 +37,10 @@ class ConfPut(BaseModel):
     email: str | None = None
     gdrive_folder_id: str | None = None
 
+    @classmethod
     @field_validator('registration_start_date', 'registration_end_date', 'submission_start_date', 'submission_end_date',
-                     'conf_start_date', 'conf_end_date')
-    def validate_date(self, value):
+                     'conf_start_date', 'conf_end_date',)
+    def validate_date(cls, value):
         try:
             datetime.strptime(value, '%d.%m.%Y')
         except ValueError:
@@ -64,7 +67,7 @@ class ConfPost(BaseModel):
 
     @field_validator('registration_start_date', 'registration_end_date', 'submission_start_date', 'submission_end_date',
                      'conf_start_date', 'conf_end_date')
-    def validate_date(self, value):
+    def validate_date(cls, value):
         try:
             datetime.strptime(value, '%d.%m.%Y')
         except ValueError:
