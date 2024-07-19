@@ -1,0 +1,24 @@
+.conferences {
+
+   &__title {
+      font-size: 1.45em;
+      font-weight: 600;
+      margin-bottom: 40px;
+   }
+
+   &__container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+
+      // flex-wrap: wrap;
+      column-gap: 40px;
+      row-gap: 20px;
+   }
+
+   &__buttons{
+      margin-bottom: 20px;
+      display: flex;
+      column-gap: 12px;
+   }
+}
+

@@ -1,0 +1,64 @@
+[
+  {
+    "id": 1,
+    "telegram_id": "1234", 
+    "discord_id": "4321", 
+    "submitted_at": "2023-07-12T13:23:53.697941+03:00", 
+    "updated_at": "2023-07-15T13:23:53.697941+03:00", 
+    "email": "alex@1234.com", 
+    "phone": "+78005553535", 
+    "name": "Иван", 
+    "surname": "Иванов", 
+    "patronymic": "Иванович", 
+    "university": "ГУАП", 
+    "student_group": "4131", 
+    "applicant_role": "студент", 
+    "title": "Исследование искусственного интеллекта", 
+    "adviser": "проф. Сидоров А.В.", 
+    "coauthors": [
+      {"name": "Константин", "surname": "Константинов", "patronymic": "Константинович", "email": "constantinov@example.com"}
+    ]
+  },
+  {
+  "id": 2,
+  "telegram_id": "1234", 
+  "discord_id": "4321", 
+  "submitted_at": "2023-07-13T13:23:53.697941+03:00", 
+  "updated_at": "2023-07-15T13:23:53.697941+03:00", 
+  "email": "awp@987.com", 
+  "phone": "+79001234567", 
+  "name": "Иван", 
+  "surname": "Иванов", 
+  "patronymic": "Иванович", 
+  "university": "ГУАП", 
+  "student_group": "4132", 
+  "applicant_role": "студент", 
+  "title": "Глобальное потепление", 
+  "adviser": "проф. Козлов Б.Б.", 
+  "coauthors": [
+    {"name": "Сергей", "surname": "Сергеев", "patronymic": "Сергеевич", "email": "sergeev@example.com"}, 
+    {"name": "Ноунейм", "surname": "Аноним", "patronymic": "Ноунеймович", "email": "anonymous@example.com"} 
+  ]
+  },
+  {
+  "id": 3,
+  "telegram_id": "1234", 
+  "discord_id": "4133", 
+  "submitted_at": "2023-07-15T13:23:53.697941+03:00", 
+  "updated_at": "2023-07-15T13:23:53.697941+03:00", 
+  "email": "fly@why.com", 
+  "phone": "+79067548787", 
+  "name": "Иван", 
+  "surname": "Иванов", 
+  "patronymic": "Иванович", 
+  "university": "ГУАП", 
+  "student_group": "4031", 
+  "applicant_role": "студент", 
+  "title": "Название работы, подаваемой на конференцию", 
+  "adviser": "проф. Сидоров А.В.", 
+  "coauthors": [
+    {"name": "Петр", "surname": "Петров", "patronymic": "Петрович", "email": "petrov@example.com"}, 
+    {"name": "Ноунейм", "surname": "Аноним", "patronymic": "Ноунеймович", "email": "anonymous@example.com"} 
+  ]
+  } 
+]
