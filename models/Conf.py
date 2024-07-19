@@ -60,7 +60,6 @@ class ConfPost(BaseModel):
     organized_by: str
     url: str | None = None
     email: str
-    ud:str
     gdrive_folder_id: str | None = None
 
     @field_validator('registration_start_date', 'registration_end_date', 'submission_start_date', 'submission_end_date',
