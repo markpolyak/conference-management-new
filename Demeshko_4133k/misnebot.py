@@ -1,7 +1,7 @@
 import telebot
 import requests
 from telebot import types
-address="http://localhost"
+address="http://localhost:8000"
 
 bot = telebot.TeleBot('7313583878:AAEhpT-01bxTYRFLZLh7gwka5Bpz8H5t3uU')
     
@@ -25,32 +25,39 @@ def mero(message):
         markup_inline.add(future)
         msg=bot.send_message(message.chat.id, 'Какие конференции вы хоитет посмотреть',reply_markup=markup_inline)
     elif(message.text=="Поданные заявки"):
-        markup_zayavki=types.InlineKeyboardMarkup()
-        zayavki =types.InlineKeyboardButton(text='Поданные заявки',callback_data='zayavki')
-        markup_zayavki.add(zayavki)
         response = requests.get(address + "/conferences?filter=past")
-        past_confs = set(response.json())
+        past_confs = response.json()
         response = requests.get(address + "/conferences?filter=active")
-        active_confs = set(response.json())
-        confs = dict(past_confs + active_confs) # прошедшие и текущие конференции
+        active_confs = response.json()
+
+        confs = past_confs # прошедшие и текущие конференции
+        for active in active_confs:
+            confs.append(active)
         for conf in confs :
-            conf_response = requests.get(address + "/conferences/" + conf.id)
+            conf_response = requests.get(address + "/conferences/" + str(conf['id']))
             conf_desc = conf_response.json()
+            markup_zayavki=types.InlineKeyboardMarkup()
+            zayavki =types.InlineKeyboardButton(text='Поданные заявки',callback_data='zayavki|' + str(conf['id']))
+            markup_zayavki.add(zayavki)
             message_text = "Название: {}\nОрганизатор: {}\nСсылка: {}\nДата начала приема заявок: {}\nДата Окончания приема заявок: {}\nДата начала приема докладов: {}\nДата Окончания приема докладов: {}\nДата начала конференции: {}\nДата Окончания конференции: {}\n".format(
-                conf_desc.title, conf_desc.organized_by, conf_desc.url, conf_desc.registrating_start_date, conf_desc.registrating_end_date, conf_desc.submission_start_date, conf_desc.submission_end_date, conf_desc.conf_start_date, conf_desc.conf_end_date
+                conf_desc['name_rus'], conf_desc['organized_by'], conf_desc['url'], conf_desc['registration_start_date'], conf_desc['registration_end_date'], conf_desc['submission_start_date'], conf_desc['submission_end_date'], conf_desc['conf_start_date'], conf_desc['conf_end_date']
             )
             bot.send_message(message.chat.id, message_text,reply_markup=markup_zayavki)
         
 def handle_docs(message,conf_id,zayavka_id):
         if message.document is None:
-            msg=bot.send_message(text="Отправьте ljrevtyn!")
+            msg=bot.send_message(message.chat.id, text="Отправьте ljrevtyn!")
             bot.register_next_step_handler(msg,handle_docs,conf_id,zayavka_id)
         else:
             file_info = bot.get_file(message.document.file_id)
             downloaded_file = bot.download_file(file_info.file_path)
-            response = requests.post(address + "/conferences/" + conf_id + "/applications/" + zayavka_id + "/publication", files={message.document.name, downloaded_file})
+            body = {}
+            body['telegram_id'] = message.from_user.id
+            body['publication_title'] = message.document.file_name
+            headers = {'Content-type': 'multipart/form-data'}
+            files = {'document': downloaded_file}
+            response = requests.post(address + "/conferences/" + str(conf_id) + "/applications/" + str(zayavka_id) + "/publication", files=files, json=body, headers=headers)
             bot.reply_to(message, "Файл сохранен")
-
         
 def reg_name(message,info):
     name = message.text
@@ -134,7 +141,7 @@ def reg_soavtor(message,info):
         bot.register_next_step_handler(msg,reg_soavtor_name, info, soavtor_inf)
     else : 
         conf_id = info['conf_id']
-        response = requests.post(address + "/conferences/" + conf_id + "/applications", json=info.__dict__)
+        response = requests.post(address + "/conferences/" + str(conf_id) + "/applications", json=info)
 
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         mero = types.KeyboardButton("Конференции")
@@ -181,20 +188,20 @@ def answer(call):
         response = requests.get(address + "/conferences?filter=past")
         conference_list = response.json()
         for conf in conference_list:
-            msg=bot.send_message(call.message.chat.id, conf.name_rus_short+"/n"+conf.name_eng_short+"/n"+"Дата начала проведения конференции "+ conf.conf_start_date+"/n"+"Дата завершения конференции "+conf.conf_end_date) 
+            msg=bot.send_message(call.message.chat.id, conf['name_rus_short']+"\n"+conf['name_eng_short']+"\n"+"Дата начала проведения конференции "+ conf['conf_start_date']+"\n"+"Дата завершения конференции "+conf['conf_end_date']) 
     elif call.data=='open':
         response = requests.get(address + "/conferences?filter=active")
         conference_list = response.json()
         for conf in conference_list:
             btn_reg=types.InlineKeyboardMarkup()
-            reg = types.InlineKeyboardButton (text="Зарегистрироваться",callback_data='reg_mero|'+conf.id)
+            reg = types.InlineKeyboardButton (text="Зарегистрироваться",callback_data='reg_mero|'+ str(conf['id']))
             btn_reg.add(reg)
-            msg=bot.send_message(call.message.chat.id, conf.name_rus_short+"/n"+conf.name_eng_short+"/n"+"Дата начала проведения конференции "+ conf.conf_start_date+"/n"+"Дата завершения конференции "+conf.conf_end_date,reply_markup=btn_reg)
+            msg=bot.send_message(call.message.chat.id, conf['name_rus_short']+"\n"+conf['name_eng_short']+"\n"+"Дата начала проведения конференции "+ conf['conf_start_date']+"\n"+"Дата завершения конференции "+conf['conf_end_date'],reply_markup=btn_reg)
     elif call.data =='future':
         response = requests.get(address + "/conferences?filter=future")
         conference_list = response.json()
         for conf in conference_list:
-            msg=bot.send_message(call.message.chat.id, conf.name_rus_short+"/n"+conf.name_eng_short+"/n"+"Дата начала проведения конференции "+ conf.conf_start_date+"/n"+"Дата завершения конференции "+conf.conf_end_date)
+            msg=bot.send_message(call.message.chat.id, conf['name_rus_short']+"\n"+conf['name_eng_short']+"\n"+"Дата начала проведения конференции "+ conf['conf_start_date']+"\n"+"Дата завершения конференции "+conf['conf_end_date'],)
     elif 'reg_mero' in call.data :
         conf_id=int(call.data.split("|")[1])
         bot.send_message(call.message.chat.id,'Давай заполним необходимую информацию.')
@@ -212,25 +219,25 @@ def answer(call):
         bot.register_next_step_handler(msg,reg_name,info)
     elif 'zayavki' in call.data:
         conf_id=int(call.data.split("|")[1])
-        response = requests.get(address + "/conferences/" + conf_id + "/applications?telegram_id=" + call.from_user.id)
+        response = requests.get(address + "/conferences/" + str(conf_id) + "/applications?telegram_id=" + str(call.from_user.id))
         zayavki = response.json()
         for zayavka in zayavki: 
             btn_article_inline = types.InlineKeyboardMarkup()
-            update = types.InlineKeyboardButton(text='Изменить данные',callback_data='update|'+conf.id+'|'+zayavka.id) 
-            add_article = types.InlineKeyboardButton(text='Добавить статью', callback_data='add_article|'+conf.id+'|'+zayavka.id)
+            update = types.InlineKeyboardButton(text='Изменить данные',callback_data='update|'+str(conf_id)+'|'+str(zayavka['id'])) 
+            add_article = types.InlineKeyboardButton(text='Добавить статью', callback_data='add_article|'+str(conf_id)+'|'+str(zayavka['id']))
             btn_article_inline.add(update)
             btn_article_inline.add(add_article)
-            submit_date = zayavka.submitted_at
-            update_date = zayavka.updated_at
-            title = zayavka.title
-            adviser = zayavka.adviser
-            soavtori = zayavka.coauthors
+            submit_date = zayavka['submitted_at']
+            update_date = zayavka['updated_at']
+            title = zayavka['title']
+            adviser = zayavka['adviser']
+            soavtori = zayavka['coauthors']
             message = "Работа: {}\nРуководитель: {}\nДата подачи: {}\nДата последнего изменения: {}\nСоавторы: ".format(title, adviser, submit_date, update_date)
             if len(soavtori) == 0:
                 message = message + "Нет"
             else:
                 for soavtor in soavtori:
-                    message = message + "\n" + soavtor
+                    message = message + "\n" + soavtor['surname'] + soavtor['name']
             bot.send_message(call.message.chat.id, message, reply_markup=btn_article_inline) #инфо о заявке
     elif 'add_article' in call.data :
         conf_id=int(call.data.split("|")[1])
