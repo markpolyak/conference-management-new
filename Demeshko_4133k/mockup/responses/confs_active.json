@@ -1,0 +1,9 @@
+[
+    {
+      "id": 1,
+      "name_rus_short": "Активная конференция",
+      "name_eng_short": "Active conf",
+      "conf_start_date": "Дата начала проведения конференции",
+      "conf_end_date": "Дата завершения конференции"
+    }
+]
